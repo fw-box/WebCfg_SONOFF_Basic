@@ -20,7 +20,7 @@
 #include "HAMqttDevice.h"
 
 #define DEVICE_TYPE 36
-#define FIRMWARE_VERSION "1.0.0"
+#define FIRMWARE_VERSION "1.0.1"
 #define DEV_TYPE_NAME "SWITCH"
 #define PIN_SWITCH 12
 #define PIN_LED 13
