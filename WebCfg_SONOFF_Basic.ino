@@ -20,7 +20,7 @@
 #include "HAMqttDevice.h"
 
 #define DEVICE_TYPE 36
-#define FIRMWARE_VERSION "1.0.3"
+#define FIRMWARE_VERSION "1.0.4"
 #define DEV_TYPE_NAME "SWITCH"
 #define PIN_SWITCH 12
 #define PIN_LED 13
@@ -160,7 +160,7 @@ void loop()
       if (MqttClient.connected()) {
       } // END OF "if (MqttClient.connected())"
       else {
-        Serial.printf("MqttClient.connected() = %d\n", MqttClient.connected());
+        //Serial.printf("MqttClient.connected() = %d\n", MqttClient.connected());
         //Serial.print("Try to connect MQTT broker - ");
         //Serial.printf("%s, %s, %s\n", MqttBrokerIp.c_str(), MqttBrokerUsername.c_str(), MqttBrokerPassword.c_str());
         int re_code = HaMqttConnect(
@@ -173,7 +173,7 @@ void loop()
           &AttemptingMqttConnTime
         );
         //Serial.println("Done");
-        Serial.printf("re_code (B) = %d\n", re_code);
+        //Serial.printf("re_code (B) = %d\n", re_code);
         if (re_code == 0) { // Success
           //
           // Publish the switch status to home assistant server.
