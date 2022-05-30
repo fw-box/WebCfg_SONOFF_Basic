@@ -20,10 +20,16 @@
 #include "HAMqttDevice.h"
 
 #define DEVICE_TYPE 36
-#define FIRMWARE_VERSION "1.0.6"
+#define FIRMWARE_VERSION "1.0.7"
 #define DEV_TYPE_NAME "SWITCH"
 #define PIN_SWITCH 12
 #define PIN_LED 13
+#define PIN_BUTTON 0
+
+//
+// Function definitions
+//
+void ICACHE_RAM_ATTR onButtonPressed();
 
 //
 // WebCfg instance
@@ -42,6 +48,7 @@ bool HAEnable = false;
 
 unsigned long ReadingTime = 0;
 unsigned long AttemptingMqttConnTime = 0;
+bool FlagButtonPressed = false;
 
 void setup()
 {
@@ -52,7 +59,7 @@ void setup()
   AttemptingMqttConnTime = 0;
   
   WebCfg.earlyBegin();
-
+  
   //
   // Create 5 inputs in web page.
   //
@@ -130,12 +137,12 @@ void setup()
         // Publish the switch status to home assistant server.
         //
         if (digitalRead(PIN_SWITCH) == HIGH) {
-          digitalWrite(PIN_LED, HIGH);
+          digitalWrite(PIN_LED, LOW);
           bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "ON");
           Serial.printf("result_publish(ON) = %d\n", result_publish);
         }
         else {
-          digitalWrite(PIN_LED, LOW);
+          digitalWrite(PIN_LED, HIGH);
           bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "OFF");
           Serial.printf("result_publish(OFF) = %d\n", result_publish);
         }
@@ -144,6 +151,11 @@ void setup()
   }
   Serial.printf("Home Assistant = %d\n", HAEnable);
 
+  //
+  // Attach interrupt for button
+  //
+  attachInterrupt(PIN_BUTTON, onButtonPressed, FALLING); //assign int0
+  
 } // void setup()
 
 void loop()
@@ -151,6 +163,40 @@ void loop()
   WebCfg.handle();
   MqttClient.loop();
 
+  if(FlagButtonPressed == true) {
+    //
+    // Toggle the GPIO status of relay
+    //
+    if(digitalRead(PIN_SWITCH) == 0)
+      digitalWrite(PIN_SWITCH, 1);
+    else
+      digitalWrite(PIN_SWITCH, 0);
+
+    if(digitalRead(PIN_SWITCH) == 0) {
+      bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "OFF");
+      Serial.printf("result_publish(OFF) = %d\n", result_publish);
+
+      //
+      // Sync the status to LED
+      //
+      digitalWrite(PIN_LED, HIGH); // This value is reverse
+    }
+    else {
+      bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "ON");
+      Serial.printf("result_publish(ON) = %d\n", result_publish);
+
+      //
+      // Sync the status to LED
+      //
+      digitalWrite(PIN_LED, LOW); // This value is reverse
+    }
+
+    //
+    // Reset the flag
+    //
+    FlagButtonPressed = false;
+  }
+  
   //
   // If user enable the home assistant function.
   //
@@ -179,12 +225,12 @@ void loop()
           // Publish the switch status to home assistant server.
           //
           if (digitalRead(PIN_SWITCH) == HIGH) {
-            digitalWrite(PIN_LED, HIGH);
+            digitalWrite(PIN_LED, LOW);
             bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "ON");
             Serial.printf("result_publish(ON) = %d\n", result_publish);
           }
           else {
-            digitalWrite(PIN_LED, LOW);
+            digitalWrite(PIN_LED, HIGH);
             bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "OFF");
             Serial.printf("result_publish(OFF) = %d\n", result_publish);
           }
@@ -278,15 +324,24 @@ void MqttCallback(char* topic, byte* payload, unsigned int length) {
   Serial.println(str_from_ha);
   if (str_from_ha.equals("ON")) {
     digitalWrite(PIN_SWITCH, HIGH);
-    digitalWrite(PIN_LED, HIGH);
+    digitalWrite(PIN_LED, LOW);
     bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "ON");
     Serial.printf("result_publish(ON) = %d\n", result_publish);
   }
   else {
     digitalWrite(PIN_SWITCH, LOW);
-    digitalWrite(PIN_LED, LOW);
+    digitalWrite(PIN_LED, HIGH);
     bool result_publish = MqttClient.publish(HaDev->getStateTopic().c_str(), "OFF");
     Serial.printf("result_publish(OFF) = %d\n", result_publish);
   }
 
+}
+
+void ICACHE_RAM_ATTR onButtonPressed()
+{
+  static unsigned long previous_pressed_time = 0;
+  if((millis() - previous_pressed_time) > 900) { // Debouncing
+    FlagButtonPressed = true;
+    previous_pressed_time = millis();
+  }
 }
