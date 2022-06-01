@@ -20,7 +20,7 @@
 #include "HAMqttDevice.h"
 
 #define DEVICE_TYPE 36
-#define FIRMWARE_VERSION "1.0.7"
+#define FIRMWARE_VERSION "1.0.8"
 #define DEV_TYPE_NAME "SWITCH"
 #define PIN_SWITCH 12
 #define PIN_LED 13
@@ -58,6 +58,7 @@ void setup()
   pinMode(PIN_LED, OUTPUT);
   AttemptingMqttConnTime = 0;
   
+  WebCfg.setWiFiApMiddleName(DEV_TYPE_NAME);
   WebCfg.earlyBegin();
   
   //
@@ -68,7 +69,6 @@ void setup()
   WebCfg.setItem(2, "MQTT Broker Password", "MQTT_PASS"); // string input
   WebCfg.setItem(3, "Home Assistant", "HA_EN_DIS", ITEM_TYPE_EN_DIS); // enable/disable select input
   WebCfg.setItem(4, "Device Name", "DEV_NAME"); // string input
-  WebCfg.setWiFiApMiddleName(DEV_TYPE_NAME);
   WebCfg.begin();
 
   //
